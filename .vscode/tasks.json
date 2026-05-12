@@ -1,0 +1,62 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "C:/msys64/ucrt64/bin/g++.exe",
+            "args": [
+                "-O1",
+                "-static",
+                "-I", "C:/msys64/ucrt64/include",
+                "-L", "C:/msys64/ucrt64/lib",
+                "-L", "C:/msys64/ucrt64/lib/x64",
+                "entry_point.cpp",
+                "proxy/proxy/proxy.cpp",
+                "overlay/overlay/overlay.cpp",
+                "overlay/duplication/duplication.cpp",
+                "direct_x/direct_x.cpp",
+                "gui/gui.cpp",
+                "gui/imgui/imgui_demo.cpp",
+                "gui/imgui/imgui_draw.cpp",
+                "gui/imgui/imgui_impl_dx11.cpp",
+                "gui/imgui/imgui_impl_win32.cpp",
+                "gui/imgui/imgui_tables.cpp",
+                "gui/imgui/imgui_widgets.cpp",
+                "gui/imgui/imgui.cpp",
+                "-ld3d11",
+                "-ldxgi",
+                "-ld3dcompiler",
+                "-lntdll",
+                "-lWebView2Loader",
+                "-lole32",
+                "-loleaut32",
+                "-lshlwapi",
+                "-lversion",
+                "-lgdi32",
+                "-ldwmapi",
+                "-o", "${workspaceFolder}/gaming chair.exe"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "run",
+            "type": "shell",
+            "command": "${workspaceFolder}/gaming_chair.exe",
+            "dependsOn": "build",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        }
+    ]
+}
