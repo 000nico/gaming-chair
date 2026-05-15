@@ -250,10 +250,10 @@ static void draw_combat( float col1, float col2, float gap )
         zui::checkbox( "enable", aimassist::enabled );
         zui::separator( );
 
-        zui::slider_float( "smoothing", aimassist::smoothing, 0.f, 50.f );
+        zui::slider_float( "smoothing", aimassist::smoothing, 0.f, 20.f );
         zui::separator( );
 
-        zui::slider_float( "fov", aimassist::radio, 10.f, 100.f );
+        zui::slider_float( "fov", aimassist::radio, 10.f, 150.f );
         zui::checkbox( "render fov", aimassist::renderRadio );
         zui::separator( );
 
@@ -285,20 +285,14 @@ static void draw_combat( float col1, float col2, float gap )
 
     zui::new_line( );
 
-    // ── RCS ──
     /*
     if ( zui::begin_group_box( "rcs", col1 ) )
     {
         zui::checkbox( "enable", rcs::enabled );
         zui::separator( );
-
         zui::slider_float( "smoothing", rcs::smoothing, 0.f, 200.f );
-        zui::separator( );
-
-        //zui::checkbox( "delay", rcs::delay );
-
         zui::end_group_box( );
-    }*/             
+    }        */ 
 }
 
 static void draw_settings( float col1, float col2, float gap )

@@ -2,9 +2,22 @@
 #pragma once
 #include "../memory/memory.h"
 #include "../gui/zdraw/zdraw/zdraw.hpp"
+#include <atomic>
 
 extern float viewMatrix[16];
 extern std::string configName;
+extern std::atomic<int> isAiming;
+
+struct QAngle {
+    float x; // Pitch
+    float y; // Yaw
+    float z; // Roll
+};
+
+extern QAngle punchAngle;
+
+inline std::atomic<float> punchDeltaX { 0.f };
+inline std::atomic<float> punchDeltaY { 0.f };
 
 namespace reader {
     void handler();

@@ -28,7 +28,7 @@ void exit(){
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
     HWND hWnd = GetConsoleWindow();
-    ShowWindow(hWnd, SW_HIDE); 
+    //ShowWindow(hWnd, SW_HIDE); 
 
     timeBeginPeriod(1);
 
@@ -58,6 +58,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     std::thread(zEntry::zMain).detach();
     std::thread(triggerbot::handler).detach();
     std::thread(aimassist::handler).detach();
+    std::thread(rcs::handler).detach();
 
     while (true) {
         if(!FindWindowA(nullptr, "Counter-Strike 2") || destroyed) break;

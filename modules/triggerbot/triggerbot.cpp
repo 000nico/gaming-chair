@@ -1,49 +1,58 @@
 #include "../modules.hpp"
 #include <iostream>
 #include <windows.h>
-#include <cstdlib>
-#include <ctime>
-
-#define MOUSE_LEFT_BUTTON_DOWN   0x0001
-#define MOUSE_LEFT_BUTTON_UP     0x0002
-#define max(a, b) (((a) > (b)) ? (a) : (b))
+#include <random>
+#include <algorithm>
 
 void triggerbot::handler() {
     pNtUserSendInput NtUserSendInput = NULL;
 
     HMODULE hWin32u = GetModuleHandleA("win32u.dll");
+    if (!hWin32u) return;
     NtUserSendInput = (pNtUserSendInput)GetProcAddress(hWin32u, "NtUserSendInput");
+    if (!NtUserSendInput) return;
 
-    srand(time(NULL));
+    std::mt19937 rng(std::random_device{}());
 
-    HWND game = FindWindowA(nullptr, "Counter-Strike 2");
+    HWND game = nullptr;
+    DWORD lastWndCheck = 0;
 
     while (true) {
-        if (triggerbot::enabled) {
-            if (isAiming > 0) { 
-                //std::cout << "aiming: " << isAiming << std::endl;
+        Sleep(1);
 
-                if(!triggerbot::randomization)
-                    Sleep(triggerbot::delay);
-                else
-                    Sleep(max(rand() % 60 + (int)triggerbot::delay - 30, 0)); // 30ms between the delay
-                
-                if(GetForegroundWindow() == game){
-                    INPUT input = {0};
-                    input.type = INPUT_MOUSE;
-                    input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-                    NtUserSendInput(1, &input, sizeof(INPUT));
+        if (!triggerbot::enabled) continue;
+        if (isAiming <= 0) continue;
 
-                    input = {0};
-                    input.type = INPUT_MOUSE;
-                    input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
-                    NtUserSendInput(1, &input, sizeof(INPUT));
-
-                    Sleep(1); 
-                    
-                }
-            }
+        DWORD now = GetTickCount();
+        if (!game || (now - lastWndCheck) > 2000) {
+            game = FindWindowA(nullptr, "Counter-Strike 2");
+            lastWndCheck = now;
         }
-        Sleep(1); 
+        if (!game || GetForegroundWindow() != game) continue;
+
+        int delay;
+        if (!triggerbot::randomization) {
+            delay = (int)triggerbot::delay;
+        } else {
+            std::uniform_int_distribution<int> dist(-30, 30);
+            delay = std::max(0, (int)triggerbot::delay + dist(rng));
+        }
+
+        if (delay > 0)
+            Sleep(delay);
+
+        if (!triggerbot::enabled) continue;
+        if (isAiming <= 0) continue;
+        if (GetForegroundWindow() != game) continue;
+
+        INPUT input = {};
+        input.type = INPUT_MOUSE;
+        input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+        NtUserSendInput(1, &input, sizeof(INPUT));
+
+        input = {};
+        input.type = INPUT_MOUSE;
+        input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+        NtUserSendInput(1, &input, sizeof(INPUT));
     }
 }

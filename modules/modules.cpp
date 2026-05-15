@@ -1,7 +1,7 @@
 #include "modules.hpp"
 #include "../gui/zdraw/zdraw/zdraw.hpp"
 
-int isAiming = -1;
+std::atomic<int> isAiming{ 0 };
 std::string configName = "config";
 
 namespace esp {
@@ -41,7 +41,7 @@ namespace aimassist {
 }
 
 namespace triggerbot {
-    bool enabled;
+    bool enabled = false;
     float delay = 100.0f;
     bool randomization;
 }

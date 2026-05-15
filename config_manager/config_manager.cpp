@@ -81,6 +81,7 @@ int config::save(const std::string& filename){
     j["aimRenderRadio"]  = aimassist::renderRadio;
     j["aimRenderDeadZone"]= aimassist::renderDeadZone;
     j["aimRadio"]        = aimassist::radio;
+    j["aimDeadZoneEnabled"] = aimassist::deadZoneEnabled;
     j["aimDeadZone"]     = aimassist::deadZone;
     j["aimSmoothing"]    = aimassist::smoothing;
 
@@ -140,6 +141,7 @@ int config::load(const std::string& filename){
     aimassist::radio          = j.value("aimRadio", 50.0f);
     aimassist::deadZone       = j.value("aimDeadZone", 10.0f);
     aimassist::smoothing      = j.value("aimSmoothing", 1.0f);
+    aimassist::deadZoneEnabled= j.value("aimDeadZoneEnabled", false);
 
     triggerbot::enabled       = j.value("trigger", false);
     triggerbot::delay         = j.value("triggerDelay", 0.0f);

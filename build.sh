@@ -45,6 +45,7 @@ SRCS=(
   "modules/triggerbot/triggerbot.cpp"
   "modules/aimbot/aimbot.cpp"
   "modules/aimbot/renderAim.cpp"
+  "modules/rcs/rcs.cpp"
   "protector/upp.cpp"
   "protector/thread or dll protection/dll protection.cpp"
   "protector/helper/sdk.cpp"

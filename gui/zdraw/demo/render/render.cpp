@@ -3,42 +3,44 @@
 #include "../../../modules/modules.hpp"
 
 namespace render {
-
 	static HWND  cs2_hwnd{ nullptr };
 	static HHOOK ll_mouse_hook{ nullptr };
 	static bool  menu_open{ false };
+	static HCURSOR arrow_cursor{ nullptr };
 
-	// ------------------------------------------------------------
-	//  Low-level mouse hook
-	//  Solo se instala mientras el menu esta abierto.
-	//  Unico objetivo: redirigir WM_MOUSEWHEEL a nuestra ventana
-	//  para que zui pueda scrollear sin que CS2 lo consuma.
-	//  Todo lo demas pasa sin tocar.
-	// ------------------------------------------------------------
 	static LRESULT CALLBACK ll_mouse_proc( int nCode, WPARAM wparam, LPARAM lparam )
 	{
-		if ( nCode == HC_ACTION && wparam == WM_MOUSEWHEEL )
+		if ( nCode == HC_ACTION )
 		{
-			const auto* ms    = reinterpret_cast<MSLLHOOKSTRUCT*>( lparam );
-			const SHORT delta = static_cast<SHORT>( HIWORD( ms->mouseData ) );
+			if ( wparam == WM_MOUSEWHEEL )
+			{
+				const auto* ms    = reinterpret_cast<MSLLHOOKSTRUCT*>( lparam );
+				const SHORT delta = static_cast<SHORT>( HIWORD( ms->mouseData ) );
 
-			POINT pt{ ms->pt.x, ms->pt.y };
-			ScreenToClient( window::hwnd, &pt );
+				POINT pt{ ms->pt.x, ms->pt.y };
+				ScreenToClient( window::hwnd, &pt );
 
-			// PostMessageW va a la queue del thread — el PeekMessage sin filtro lo recoge
-			PostMessageW( window::hwnd, WM_MOUSEWHEEL,
-			              MAKEWPARAM( 0, delta ),
-			              MAKELPARAM( pt.x, pt.y ) );
+				PostMessageW( window::hwnd, WM_MOUSEWHEEL,
+				              MAKEWPARAM( 0, delta ),
+				              MAKELPARAM( pt.x, pt.y ) );
 
-			return 1; // consumir: CS2 no recibe el scroll
+				return 1;
+			}
+
+			if ( menu_open &&
+			     ( wparam == WM_MOUSEMOVE   ||
+			       wparam == WM_LBUTTONDOWN ||
+			       wparam == WM_LBUTTONUP   ||
+			       wparam == WM_RBUTTONDOWN ||
+			       wparam == WM_RBUTTONUP ) )
+			{
+				SetCursor( arrow_cursor );
+			}
 		}
 
 		return CallNextHookEx( ll_mouse_hook, nCode, wparam, lparam );
 	}
 
-	// ------------------------------------------------------------
-	//  Helpers
-	// ------------------------------------------------------------
 	static HWND find_cs2( )
 	{
 		HWND h = FindWindowW( nullptr, L"Counter-Strike 2" );
@@ -85,26 +87,39 @@ namespace render {
 
 		if ( visible )
 		{
-			// Quitar WS_EX_TRANSPARENT para recibir hit-test, mantener NOACTIVATE
+			ClipCursor( nullptr );
+			ReleaseCapture();
+
+			// forzar liberación del raw input de CS2/SDL
+			if ( cs2_hwnd && IsWindow( cs2_hwnd ) )
+			{
+				RAWINPUTDEVICE rid{};
+				rid.usUsagePage = 0x01;
+				rid.usUsage     = 0x02;
+				rid.dwFlags     = RIDEV_REMOVE;
+				rid.hwndTarget  = nullptr;
+				RegisterRawInputDevices( &rid, 1, sizeof( rid ) );
+			}
+
 			LONG ex = GetWindowLongW( window::hwnd, GWL_EXSTYLE );
 			ex &= ~WS_EX_TRANSPARENT;
 			ex |=  WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
 			ex &= ~WS_EX_APPWINDOW;
 			SetWindowLongW( window::hwnd, GWL_EXSTYLE, ex );
 
-			// SW_SHOWNA: muestra sin activar — no roba foreground a CS2
 			ShowWindow( window::hwnd, SW_SHOWNA );
 
-			// Mostrar cursor (sin transferir foco)
-			while ( ShowCursor( TRUE ) < 0 ) {}
+			int show_count = ShowCursor( TRUE );
+			while ( show_count < 0 )
+				show_count = ShowCursor( TRUE );
 
-			// Hook de scroll — solo cuando el menu esta abierto
+			SetCursor( arrow_cursor );
+
 			if ( !ll_mouse_hook )
 				ll_mouse_hook = SetWindowsHookExW( WH_MOUSE_LL, ll_mouse_proc, nullptr, 0 );
 		}
 		else
 		{
-			// Desinstalar hook primero
 			if ( ll_mouse_hook )
 			{
 				UnhookWindowsHookEx( ll_mouse_hook );
@@ -113,21 +128,27 @@ namespace render {
 
 			ShowWindow( window::hwnd, SW_HIDE );
 
-			// Restaurar WS_EX_TRANSPARENT — la ventana no recibe input
 			LONG ex = GetWindowLongW( window::hwnd, GWL_EXSTYLE );
 			ex |=  WS_EX_TRANSPARENT | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
 			ex &= ~WS_EX_APPWINDOW;
 			SetWindowLongW( window::hwnd, GWL_EXSTYLE, ex );
 
-			while ( ShowCursor( FALSE ) >= 0 ) {}
+			if ( cs2_hwnd && IsWindow( cs2_hwnd ) )
+			{
+				SetForegroundWindow( cs2_hwnd );
+				SetFocus( cs2_hwnd );
+			}
+
+			int show_count = ShowCursor( FALSE );
+			while ( show_count >= 0 )
+				show_count = ShowCursor( FALSE );
 		}
 	}
 
-	// ------------------------------------------------------------
-	//  Public
-	// ------------------------------------------------------------
 	bool initialize( )
 	{
+		arrow_cursor = LoadCursorA( nullptr, IDC_ARROW );
+
 		if ( !window::initialize( ) )  { std::printf( "failed to initialize window\n" );  return false; }
 		if ( !directx::initialize( ) ) { std::printf( "failed to initialize directx\n" ); return false; }
 
@@ -151,8 +172,6 @@ namespace render {
 
 		while ( true )
 		{
-			// PeekMessage SIN filtro de hwnd (nullptr) — imprescindible para recoger
-			// los PostMessageW del hook LL, que llegan a la queue del thread, no a la ventana.
 			while ( PeekMessageW( &msg, nullptr, 0, 0, PM_REMOVE ) )
 			{
 				if ( msg.message == WM_QUIT )
@@ -162,7 +181,6 @@ namespace render {
 				DispatchMessageW( &msg );
 			}
 
-			// Salida limpia
 			if ( GetAsyncKeyState( VK_END ) & 1 )
 			{
 				if ( ll_mouse_hook )
@@ -174,13 +192,11 @@ namespace render {
 				break;
 			}
 
-			// Toggle menu con INSERT (deteccion de flanco)
 			const bool insert_down = ( GetAsyncKeyState( VK_INSERT ) & 0x8000 ) != 0;
 			if ( insert_down && !insert_was_down )
 				set_menu_visible( !menu_open );
 			insert_was_down = insert_down;
 
-			// Procesar mensajes de input del otro proceso (overlay payload)
 			if ( menu_open )
 			{
 				overlayPayloadStruct ops{};
@@ -198,7 +214,6 @@ namespace render {
 
 			sync_to_cs2( );
 
-			// Render
 			directx::device_context->OMSetRenderTargets( 1, &directx::render_target_view, nullptr );
 			directx::device_context->ClearRenderTargetView( directx::render_target_view, clear_color );
 
@@ -209,22 +224,20 @@ namespace render {
 
 			menu::update( );
 
-			directx::swap_chain->Present( 1, 0 );
+			directx::swap_chain->Present( 0, DXGI_PRESENT_DO_NOT_WAIT );
+
+			MsgWaitForMultipleObjects( 0, nullptr, FALSE, 1, QS_ALLINPUT );
 		}
 
 		exit_loop:;
 	}
 
-	// ------------------------------------------------------------
-	//  window
-	// ------------------------------------------------------------
 	bool window::initialize( )
 	{
 		hwnd = guiHwnd;
 		if ( !hwnd )
 			return false;
 
-		// Estilos desde el inicio: invisible, no activa, no aparece en taskbar
 		LONG ex = GetWindowLongW( hwnd, GWL_EXSTYLE );
 		ex |=  WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW | WS_EX_TRANSPARENT | WS_EX_LAYERED;
 		ex &= ~WS_EX_APPWINDOW;
@@ -232,7 +245,6 @@ namespace render {
 
 		SetWindowLongPtrW( hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>( procedure ) );
 
-		// Color key: RGB(0,0,1) = el azul casi-negro que usamos como clear color
 		SetLayeredWindowAttributes( hwnd, RGB( 0, 0, 1 ), 0, LWA_COLORKEY );
 
 		ShowWindow( hwnd, SW_HIDE );
@@ -245,25 +257,23 @@ namespace render {
 	{
 		switch ( msg )
 		{
-			// Nunca activar esta ventana via click — evita que CS2 fullscreen
-			// reciba WM_ACTIVATE(WA_INACTIVE) que dispara la minimizacion en SDL
 			case WM_MOUSEACTIVATE:
 				return MA_NOACTIVATE;
 
-			// Absorber activacion — no propagar a DefWindowProc
 			case WM_ACTIVATE:
 				return 0;
 
-			// Si por algun path Win32k nos manda foco igual, devolvérselo a CS2 de inmediato
 			case WM_SETFOCUS:
-				if ( cs2_hwnd && IsWindow( cs2_hwnd ) )
-					SetFocus( cs2_hwnd );
 				return 0;
 
-			// Forzar IDC_ARROW siempre — nunca ruedita de carga
 			case WM_SETCURSOR:
-				SetCursor( LoadCursor( nullptr, IDC_ARROW ) );
+				SetCursor( arrow_cursor );
 				return TRUE;
+
+			case WM_MOUSEMOVE:
+				if ( menu_open )
+					SetCursor( arrow_cursor );
+				return 0;
 
 			case WM_SIZE:
 				if ( wparam != SIZE_MINIMIZED )
@@ -273,6 +283,9 @@ namespace render {
 			case WM_DESTROY:
 				PostQuitMessage( 0 );
 				return 0;
+
+			case WM_NCHITTEST:
+				return HTCLIENT;
 		}
 
 		zui::process_wndproc_message( msg, wparam, lparam );
@@ -280,9 +293,6 @@ namespace render {
 		return DefWindowProcW( hwnd, msg, wparam, lparam );
 	}
 
-	// ------------------------------------------------------------
-	//  directx
-	// ------------------------------------------------------------
 	void directx::resize( UINT width, UINT height )
 	{
 		if ( !swap_chain || width == 0 || height == 0 )

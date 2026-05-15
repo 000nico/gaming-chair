@@ -93,7 +93,6 @@ struct Vector3 {
 };
 
 extern int localTeam;   
-extern int isAiming;
 
 struct Player {
     char name[16];

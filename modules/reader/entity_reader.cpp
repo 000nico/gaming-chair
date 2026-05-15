@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <tlhelp32.h>
 #include <vector>
-
 #pragma comment(lib, "winmm.lib")
 
 uintptr_t dwEntityList = 0x24D4E80;
@@ -20,10 +19,15 @@ uintptr_t dwLocalPlayerPawn = 0x205A700;
 uintptr_t m_pGameSceneNode = 0x330;
 uintptr_t m_modelState = 0x150;
 uintptr_t m_iIDEntIndex = 0x344C;
+uintptr_t m_pAimPunchServices = 0x1490;
+uintptr_t m_unpredictableBaseAngle = 0xA4;
 std::vector<Player> g_players;
 
 float viewMatrix[16] = {};
 int localTeam = 0;
+QAngle punchAngle;
+static float lastPunchX = 0.f;
+static float lastPunchY = 0.f;
 
 uintptr_t GetModuleBase(DWORD pid, const char* moduleName) {
     uintptr_t moduleBase = 0;
@@ -68,6 +72,25 @@ void reader::handler() {
         localTeam = proxy::read<int>(localPawn + m_iTeamNum);
         uint32_t aimHandle = proxy::read<uint32_t>(localPawn + m_iIDEntIndex);
         isAiming = 0;
+
+        uintptr_t aimPunchServices = proxy::read<uintptr_t>(localPawn + 0x1490);
+
+        float newPunchX = proxy::read<float>(aimPunchServices + 0x60);
+        float newPunchY = proxy::read<float>(aimPunchServices + 0x64);
+
+        float deltaX = newPunchX - lastPunchX;
+        float deltaY = newPunchY - lastPunchY;
+
+        float expected = punchDeltaX.load();
+        while (!punchDeltaX.compare_exchange_weak(expected, expected + deltaX));
+
+        expected = punchDeltaY.load();
+        while (!punchDeltaY.compare_exchange_weak(expected, expected + deltaY));
+
+        lastPunchX = newPunchX;
+        lastPunchY = newPunchY;
+
+        
 
         for (int i = 0; i < 16; i++)
             viewMatrix[i] = proxy::read<float>(client + dwViewMatrix + i * sizeof(float));
