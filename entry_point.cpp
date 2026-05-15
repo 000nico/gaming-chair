@@ -15,18 +15,20 @@
 HWND overlayHwnd = NULL;
 OverlayInstance overlayInst;
 
-//OverlayInstance guiInst;
+OverlayInstance guiInst;
 //HWND guiHwnd = NULL;
+bool destroyed=false;
 
 void exit(){
     proxy::exit(TRUE);
     overlay::exit(TRUE, overlayInst);
     duplication::exit(TRUE);
-    //overlay::exitGui(TRUE, guiInst);
+    overlay::exitGui(TRUE, guiInst);
 }
 
-int main(){
-    system("cls");
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
+    HWND hWnd = GetConsoleWindow();
+    ShowWindow(hWnd, SW_HIDE); 
 
     timeBeginPeriod(1);
 
@@ -35,14 +37,13 @@ int main(){
 
     std::atexit(exit);
 
-    /*
-    overlay::init(TRUE, &guiHwnd, guiInst);
+    if(overlay::initGui(TRUE, &guiHwnd, guiInst) != 1) return 0;
 
     if(IsWindow(guiHwnd))
         std::cout << "[gui] hwnd : " << guiHwnd << std::endl;
     else  
         std::cout << "[gui] error" << std::endl;
-    */
+    
    
     if(proxy::init(QUERY_INFORMATION | OPERATION | READ | WRITE | DUP_HANDLE, "Counter-Strike 2", TRUE) != 1) return 0;
     if(overlay::init(TRUE, &overlayHwnd, overlayInst) != 1) return 0;
@@ -59,10 +60,8 @@ int main(){
     std::thread(aimassist::handler).detach();
 
     while (true) {
-    if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x47) & 0x8000)) {
-        break;
-    }
-    Sleep(50);
+        if(!FindWindowA(nullptr, "Counter-Strike 2") || destroyed) break;
+        Sleep(50);
     }
 
     timeEndPeriod(1);

@@ -5,6 +5,7 @@
 #include "overlay.hpp"
 #include "../payload/bin/payload.h"
 #include "../payload/bin2/gui_payload.h"
+#include "../../gui/zdraw/demo/render/render.hpp"
 
 DWORD getExplorerPID(){
     HWND hwnd = GetShellWindow();
@@ -137,6 +138,8 @@ int injectGuiPayload(OverlayInstance& inst){
     ops.registerClass    = (pRegisterClassEx)GetProcAddress(user32, "RegisterClassExW");
     ops.defWindowProc    = (pDefWindowProcW)GetProcAddress(user32, "DefWindowProcW");
     ops.affinity         = (pSetWindowDisplayAffinity)GetProcAddress(user32, "SetWindowDisplayAffinity");
+    ops.setWindowLongPtr = (pSetWindowLongPtrW)GetProcAddress(user32, "SetWindowLongPtrW");
+    ops.getWindowLongPtr = (pGetWindowLongPtrW)GetProcAddress(user32, "GetWindowLongPtrW");
     ops.signal           = 0;
 
     WriteProcessMemory(
@@ -182,10 +185,11 @@ int overlay::init(bool debug, HWND* returnHwnd, OverlayInstance& inst){
     if(!injectPayload(inst))
         return 0;
 
-    Sleep(100);
+    Sleep(500);
 
     overlayPayloadStruct ops{};
     ReadProcessMemory(inst.explorerHandle, inst.structPageBuffer, &ops, sizeof(ops), 0);
+    std::cout << "[overlay] ops.returnHwnd = " << ops.returnHwnd << std::endl;
 
     *returnHwnd = ops.returnHwnd;
 
@@ -195,38 +199,22 @@ int overlay::init(bool debug, HWND* returnHwnd, OverlayInstance& inst){
 int overlay::initGui(bool debug, HWND* returnHwnd, OverlayInstance& inst)
 {
     DWORD pid = getExplorerPID();
-    if(!pid)
-        return 0;
+    if (!pid) return 0;
 
     inst.explorerHandle = OpenProcess(
-        PROCESS_VM_OPERATION |
-        PROCESS_VM_WRITE |
-        PROCESS_VM_READ |
-        PROCESS_CREATE_THREAD,
-        FALSE,
-        pid
+        PROCESS_VM_OPERATION | PROCESS_VM_WRITE |
+        PROCESS_VM_READ | PROCESS_CREATE_THREAD,
+        FALSE, pid
     );
 
-    if(!inst.explorerHandle)
-        return 0;
+    if (!inst.explorerHandle) return 0;
+    if (!allocateGuiPages(inst)) return 0;
+    if (!injectGuiPayload(inst)) return 0;
 
-    if(!allocateGuiPages(inst))
-        return 0;
-
-    if(!injectGuiPayload(inst))
-        return 0;
-
-    Sleep(100);
+    Sleep(200);
 
     overlayPayloadStruct ops{};
-    ReadProcessMemory(
-        inst.explorerHandle,
-        inst.structPageBuffer2,
-        &ops,
-        sizeof(ops),
-        nullptr
-    );
-
+    ReadProcessMemory(inst.explorerHandle, inst.structPageBuffer2, &ops, sizeof(ops), nullptr);
     *returnHwnd = ops.returnHwnd;
 
     return 1;

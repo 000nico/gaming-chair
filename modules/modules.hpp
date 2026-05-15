@@ -4,6 +4,7 @@
 #include "../gui/zdraw/zdraw/zdraw.hpp"
 
 extern float viewMatrix[16];
+extern std::string configName;
 
 namespace reader {
     void handler();
@@ -44,7 +45,7 @@ namespace bones {
 namespace aimassist {
     void handler();
     void render(RECT rect);
-    extern bool enabled, renderRadio, renderDeadZone;
+    extern bool enabled, renderRadio, renderDeadZone, deadZoneEnabled;
     extern float radio, deadZone, smoothing;
 }
 
@@ -53,4 +54,10 @@ namespace triggerbot {
     extern bool enabled;
     extern float delay;
     extern bool randomization;
+}
+
+namespace rcs {
+    void handler();
+    extern bool enabled;
+    extern float smoothing;
 }

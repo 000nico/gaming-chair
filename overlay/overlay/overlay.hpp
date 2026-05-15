@@ -7,9 +7,9 @@ struct OverlayInstance {
     HANDLE remoteThread      = NULL;
     HANDLE explorerHandle    = NULL;
     
-    LPVOID overlayPageBuffer2;
-    LPVOID structPageBuffer2;
-    HANDLE remoteThread2;
+    LPVOID overlayPageBuffer2 = NULL;
+    LPVOID structPageBuffer2  = NULL;
+    HANDLE remoteThread2      = NULL;
 };
 
 namespace overlay {
@@ -37,25 +37,35 @@ typedef ATOM    (WINAPI* pRegisterClassEx)         (const WNDCLASSEXW* lpwcx);
 typedef HMODULE (WINAPI* pGetModuleHandle)         (LPCSTR lpModuleName);
 typedef void    (WINAPI* pRtlZeroMemory)           (void* dest, size_t length);
 typedef BOOL    (WINAPI* pSetWindowDisplayAffinity)(HWND hwnd, DWORD dwAffinity);
+typedef LONG_PTR (WINAPI* pSetWindowLongPtrW)(HWND, int, LONG_PTR);
+typedef LONG_PTR (WINAPI* pGetWindowLongPtrW)(HWND, int);
 
 struct overlayPayloadStruct {
     volatile int signal;
 
-    pCreateWindowInBand      createWindow;
-    pSleep                   sleep;
-    pPeekMessageW            peekMessage;
-    pTranslateMessage        translateMessage;
-    pDispatchMessageW        dispatchMessage;
-    pShowWindow              showWindow;
-    pDestroyWindow           destroyWindow;
-    pRegisterClassEx         registerClass;
-    pGetModuleHandle         getModuleHandle;
-    pDefWindowProcW          defWindowProc;
-    pRtlZeroMemory           memset;
+    pCreateWindowInBand       createWindow;
+    pSleep                    sleep;
+    pPeekMessageW             peekMessage;
+    pTranslateMessage         translateMessage;
+    pDispatchMessageW         dispatchMessage;
+    pShowWindow               showWindow;
+    pDestroyWindow            destroyWindow;
+    pRegisterClassEx          registerClass;
+    pGetModuleHandle          getModuleHandle;
+    pDefWindowProcW           defWindowProc;
+    pRtlZeroMemory            memset;
     pSetWindowDisplayAffinity affinity;
 
     WCHAR     className[32];
     WCHAR     windowName[32];
     HINSTANCE hInstance;
     HWND      returnHwnd;
+    
+    pSetWindowLongPtrW setWindowLongPtr;
+    pGetWindowLongPtrW getWindowLongPtr;
+
+    volatile UINT   pendingMsg;
+    volatile WPARAM pendingWParam;
+    volatile LPARAM pendingLParam;
+    volatile int    msgReady;
 };

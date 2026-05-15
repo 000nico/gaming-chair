@@ -9,14 +9,14 @@
 
 #pragma comment(lib, "winmm.lib")
 
-uintptr_t dwEntityList = 0x24D0DC0;
+uintptr_t dwEntityList = 0x24D4E80;
 uintptr_t hPlayerPawn = 0x90C;
 uintptr_t iHealth = 0x34C;
 uintptr_t m_iszPlayerName = 0x6F4;
 uintptr_t m_vOldOrigin = 0x1390;
-uintptr_t dwViewMatrix = 0x2330AE0;
+uintptr_t dwViewMatrix = 0x2334850;
 uintptr_t m_iTeamNum = 0x3EB;
-uintptr_t dwLocalPlayerPawn = 0x2056700;
+uintptr_t dwLocalPlayerPawn = 0x205A700;
 uintptr_t m_pGameSceneNode = 0x330;
 uintptr_t m_modelState = 0x150;
 uintptr_t m_iIDEntIndex = 0x344C;
@@ -54,16 +54,17 @@ void reader::handler() {
     while (true) {
         std::vector<Player> players;
         players.reserve(64);
-
+        
         uintptr_t entityList = proxy::read<uintptr_t>(client + dwEntityList);
         if (!entityList) { Sleep(10); continue; }
-
+        
         uintptr_t listEntry = proxy::read<uintptr_t>(entityList + 0x10);
         if (!listEntry) continue;
-
+        //std::cout << listEntry << std::endl;
         uintptr_t localPawn = proxy::read<uintptr_t>(client + dwLocalPlayerPawn);
+        //std::cout << localPawn << std::endl;
         if (!localPawn) continue;
-
+        
         localTeam = proxy::read<int>(localPawn + m_iTeamNum);
         uint32_t aimHandle = proxy::read<uint32_t>(localPawn + m_iIDEntIndex);
         isAiming = 0;
@@ -89,6 +90,7 @@ void reader::handler() {
 
             int health = proxy::read<int>(currentPawn + iHealth);
             if (health <= 0 || health > 100) continue;
+            //std::cout << health << std::endl;
 
             Player p = {};
             p.health = health;

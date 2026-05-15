@@ -7,7 +7,8 @@
 
 extern HWND overlayHwnd;
 extern HWND guiHwnd;
-
+extern void exit();
+extern bool destroyed;
 // +rep https://www.unknowncheats.me/forum/counter-strike-2-a/749047-cs-update-bone-indexes.html
 enum BoneIndices : int {
 	ORIGIN = 0,

@@ -1,3 +1,5 @@
+// this code is not being used but im lazy to remove it from the build.sh
+
 #include "gui.h"
 #include <windows.h>
 #include "../overlay/overlay/overlay.hpp"
@@ -5,9 +7,10 @@
 #include "zdraw/demo/render/render.hpp"
 #include <dwmapi.h>
 
-OverlayInstance guiInst;
+//OverlayInstance guiInst;
 HWND gameHwnd = nullptr;
 bool menuOpen = false;
+
 
 static void sync_to_game( HWND game )
 {

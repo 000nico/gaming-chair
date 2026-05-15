@@ -51,6 +51,7 @@ SRCS=(
   "protector/find target/find target.cpp"
   "protector/anti suspend/anti suspend.cpp"
   "protector/anti debug/anti debug.cpp"
+  "config_manager/config_manager.cpp"
 )
 
 mkdir -p .objs

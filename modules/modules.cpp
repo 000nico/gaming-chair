@@ -2,6 +2,7 @@
 #include "../gui/zdraw/zdraw/zdraw.hpp"
 
 int isAiming = -1;
+std::string configName = "config";
 
 namespace esp {
     bool enabled = false;
@@ -34,14 +35,18 @@ namespace bones {
 }
 
 namespace aimassist {
-    bool enabled = false, renderRadio = false, renderDeadZone = false;
+    bool enabled = false, renderRadio = false, renderDeadZone = false, deadZoneEnabled = false;
     float radio = 100.0f, deadZone = 20.0f;
     float smoothing = 15.0f;
 }
 
 namespace triggerbot {
-    void handler();
     bool enabled;
     float delay = 100.0f;
     bool randomization;
+}
+
+namespace rcs {
+    bool enabled = false;
+    float smoothing = 20.0f;
 }

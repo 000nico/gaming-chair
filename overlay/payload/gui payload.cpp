@@ -2,39 +2,37 @@
 #include "../overlay/overlay.hpp"
 
 __attribute__((section(".text"))) __attribute__((used))
-int createWindow(overlayPayloadStruct* data){
+int createWindow(overlayPayloadStruct* data)
+{
     MSG msg;
     data->peekMessage(&msg, NULL, 0, 0, PM_NOREMOVE);
 
     HMODULE explorerBase = data->getModuleHandle(NULL);
 
-    // create class
     WNDCLASSEXW wc;
     data->memset(&wc, sizeof(wc));
-    wc.cbSize = sizeof(WNDCLASSEXW);
-    wc.style = 0;
-    wc.lpfnWndProc = data->defWindowProc;
-    wc.cbClsExtra = 0;
-    wc.cbWndExtra = 0;
-    wc.hInstance = explorerBase;
-    wc.hIcon = NULL;
-    wc.hCursor = NULL;
+    wc.cbSize        = sizeof(WNDCLASSEXW);
+    wc.style         = 0;
+    wc.lpfnWndProc   = data->defWindowProc;
+    wc.cbClsExtra    = 0;
+    wc.cbWndExtra    = 0;
+    wc.hInstance     = explorerBase;
+    wc.hIcon         = NULL;
+    wc.hCursor       = NULL;
     wc.hbrBackground = NULL;
-    wc.lpszMenuName = NULL;
+    wc.lpszMenuName  = NULL;
     wc.lpszClassName = data->className;
-    wc.hIconSm = NULL;
+    wc.hIconSm       = NULL;
     data->registerClass(&wc);
 
-    // create window
     HWND windowHWND = data->createWindow(
-        WS_EX_TOPMOST | WS_EX_LAYERED, 
+        WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TRANSPARENT,
         data->className,
         data->windowName,
-        NULL, 
+        WS_POPUP,
         50, 50,
         1000, 1000,
-        NULL,
-        NULL,
+        NULL, NULL,
         explorerBase,
         NULL,
         4
@@ -44,8 +42,21 @@ int createWindow(overlayPayloadStruct* data){
     data->showWindow(windowHWND, SW_SHOW);
     data->returnHwnd = windowHWND;
 
-    while(data-> signal != -1){
-        while (data->peekMessage(&msg, windowHWND, 0, 0, PM_REMOVE)) {
+    while (data->signal != -1)
+    {
+        while (data->peekMessage(&msg, windowHWND, 0, 0, PM_REMOVE))
+        {
+            // escribir mensaje al struct ANTES de dispatchar
+            data->pendingMsg    = msg.message;
+            data->pendingWParam = msg.wParam;
+            data->pendingLParam = msg.lParam;
+            data->msgReady      = 1;
+
+            // esperar a que tu proceso lo consuma
+            int timeout = 200;
+            while (data->msgReady && timeout-- > 0)
+                data->sleep(1);
+
             data->translateMessage(&msg);
             data->dispatchMessage(&msg);
         }
@@ -53,6 +64,5 @@ int createWindow(overlayPayloadStruct* data){
     }
 
     data->destroyWindow(windowHWND);
-
     return 1;
 }
