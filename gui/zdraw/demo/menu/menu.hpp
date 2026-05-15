@@ -1,0 +1,14 @@
+#pragma once
+
+#include "../zdraw/zscene/zscene.hpp"
+
+namespace menu {
+
+	inline zscene::scene demo_scene{};
+	inline bool should_demo_play{ true };
+
+	void initialize( ID3D11Device* device, ID3D11DeviceContext* context );
+	void update( );
+	void draw( );
+
+} // namespace menu
