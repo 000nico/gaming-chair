@@ -8,7 +8,7 @@
 
 ### 1. stealth memory acquisition (handle hijacking)
 to mitigate risks associated with opening handles directly from the cheat process (VAC does strict handle checks), **gaming-chair** utilizes a proxy to read memory:
-- **[process-proxy-hijacking](https://github.com000nico/process-proxy-hijacking):** uses themes, from svchost, which already has a handle
+- **[process-proxy-hijacking](https://github.com/000nico/process-proxy-hijacking):** uses themes, from svchost, which already has a handle
 
 ### 2. no-delay, fullscren overlay (band 4 overlay and DWM bypass)
 standard external overlays typically experience significant composition latency (30-50ms) and can not render on fullscreen mode. **gaming-chair** addresses this by using:
