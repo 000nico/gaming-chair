@@ -10,7 +10,7 @@
 to mitigate risks associated with opening handles directly from the cheat process (VAC does strict handle checks), **gaming-chair** utilizes a proxy to read memory:
 - **[process-proxy-hijacking](https://github.com/000nico/process-proxy-hijacking):** uses themes, from svchost, which already has a handle
 
-### 2. no-delay, fullscren overlay (band 4 overlay and DWM bypass)
+### 2. no-delay, fullscreen overlay (band 4 overlay and DWM bypass)
 standard external overlays typically experience significant composition latency (30-50ms) and can not render on fullscreen mode. **gaming-chair** addresses this by using:
 - **[band-4-window-creation](https://github.com/000nico/band-4-window-creation):** this repo injects a payload into `explorer.exe` to create a window within **z-order band 4 (`ZWID_IMMERSIVE_NOTIFICATION`)**. 
 - windows created in this band are rendered above almost all other system elements, including exclusive fullscreen applications, without requiring the game to be in windowed or borderless mode.
