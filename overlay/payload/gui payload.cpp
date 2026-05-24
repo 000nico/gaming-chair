@@ -46,13 +46,11 @@ int createWindow(overlayPayloadStruct* data)
     {
         while (data->peekMessage(&msg, windowHWND, 0, 0, PM_REMOVE))
         {
-            // escribir mensaje al struct ANTES de dispatchar
             data->pendingMsg    = msg.message;
             data->pendingWParam = msg.wParam;
             data->pendingLParam = msg.lParam;
             data->msgReady      = 1;
 
-            // esperar a que tu proceso lo consuma
             int timeout = 200;
             while (data->msgReady && timeout-- > 0)
                 data->sleep(1);
